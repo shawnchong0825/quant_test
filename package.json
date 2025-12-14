@@ -1,0 +1,26 @@
+{
+  "name": "meme-lord-ai-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "dev:data-ops": "npm run dev --workspace=@meme-lord/data-ops",
+    "dev:researcher": "npm run dev --workspace=@meme-lord/researcher"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2",
+    "@types/node": "^20.10.0",
+    "rimraf": "^5.0.0"
+  },
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

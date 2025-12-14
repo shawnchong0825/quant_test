@@ -1,0 +1,1091 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Meme Intel + Quant Dashboard (Prototype)</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#0f1b33;
+      --panel2:#0c1730;
+      --text:#e9f0ff;
+      --muted:#a8b3cf;
+      --line:rgba(255,255,255,.08);
+      --accent:#7c5cff;
+      --good:#38d996;
+      --warn:#ffcc66;
+      --bad:#ff6b6b;
+      --chip: rgba(124,92,255,.12);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1200px 700px at 10% -10%, rgba(124,92,255,.18), transparent 60%),
+                  radial-gradient(900px 600px at 110% 0%, rgba(56,217,150,.10), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      overflow-x:hidden;
+    }
+    a{color:inherit; text-decoration:none}
+    button, input { font: inherit; color:inherit; }
+
+    /* Layout */
+    .app{
+      display:grid;
+      grid-template-columns: 280px 1fr 360px;
+      min-height: 100vh;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    /* Sidebar */
+    .sidebar{
+      padding: 14px;
+      position: sticky;
+      top: 14px;
+      height: calc(100vh - 28px);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .brand{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(124,92,255,.12);
+      border: 1px solid rgba(124,92,255,.25);
+    }
+    .brand strong{letter-spacing:.2px}
+    .badge{
+      font-size:12px;
+      padding:4px 8px;
+      border-radius:999px;
+      background: rgba(56,217,150,.12);
+      border: 1px solid rgba(56,217,150,.25);
+      color: #bff6de;
+      white-space:nowrap;
+    }
+    .nav{
+      display:flex; flex-direction:column; gap:6px;
+      padding: 6px;
+      background: rgba(0,0,0,.18);
+      border:1px solid var(--line);
+      border-radius: 14px;
+    }
+    .nav button{
+      width:100%;
+      text-align:left;
+      border:0;
+      background: transparent;
+      padding: 10px 10px;
+      border-radius: 12px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      cursor:pointer;
+      color: var(--muted);
+    }
+    .nav button:hover{ background: rgba(255,255,255,.06); color: var(--text); }
+    .nav button.active{
+      background: rgba(124,92,255,.18);
+      color: var(--text);
+      border:1px solid rgba(124,92,255,.25);
+    }
+    .nav .dot{
+      width:10px; height:10px; border-radius:999px; background: rgba(255,255,255,.18);
+    }
+    .nav button.active .dot{ background: var(--accent); }
+
+    .sideFooter{
+      margin-top:auto;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,.18);
+      border:1px solid var(--line);
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .kv{ display:flex; justify-content:space-between; color:var(--muted); font-size:13px; }
+    .kv strong{ color:var(--text); font-weight:600; }
+
+    /* Main */
+    .main{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      min-width: 0;
+    }
+    .topbar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding: 12px;
+    }
+    .search{
+      flex:1;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,.22);
+      border:1px solid var(--line);
+      min-width: 0;
+    }
+    .search input{
+      background: transparent;
+      border:0;
+      outline:none;
+      width:100%;
+      color: var(--text);
+    }
+    .pill{
+      padding: 8px 10px;
+      border-radius: 12px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      color: var(--muted);
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .pill.primary{
+      background: rgba(124,92,255,.18);
+      border:1px solid rgba(124,92,255,.28);
+      color: var(--text);
+    }
+    .pill:hover{ filter:brightness(1.05); }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+      min-width:0;
+    }
+    .span-12{ grid-column: span 12; }
+    .span-8{ grid-column: span 8; }
+    .span-7{ grid-column: span 7; }
+    .span-6{ grid-column: span 6; }
+    .span-5{ grid-column: span 5; }
+    .span-4{ grid-column: span 4; }
+
+    .panel{
+      padding: 14px;
+      min-width:0;
+    }
+    .hrow{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+      margin-bottom: 10px;
+    }
+    h2{ margin:0; font-size:16px; letter-spacing:.2px; }
+    .sub{ color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+    .chip{
+      font-size:12px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: var(--chip);
+      border:1px solid rgba(124,92,255,.22);
+      color: #d8d1ff;
+    }
+
+    /* Lists / tables */
+    .list{ display:flex; flex-direction:column; gap:10px; }
+    .item{
+      padding: 12px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      min-width:0;
+    }
+    .item .title{ font-weight:600; }
+    .item .meta{ color: var(--muted); font-size: 12px; margin-top: 4px;}
+    .item .grow{ flex:1; min-width:0; }
+    .item .right{ text-align:right; color: var(--muted); font-size: 12px; white-space:nowrap; }
+    .kpiRow{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .kpi{
+      padding: 12px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      min-width:0;
+    }
+    .kpi .label{ color: var(--muted); font-size:12px; }
+    .kpi .value{ font-size:20px; font-weight:700; margin-top:6px; }
+    .kpi .delta{ font-size:12px; margin-top:6px; color: var(--muted); }
+    .delta .up{ color: var(--good); }
+    .delta .down{ color: var(--bad); }
+
+    .spark{
+      width: 110px;
+      height: 34px;
+      border-radius: 10px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden;
+    }
+    .spark svg{ width:100%; height:100%; opacity:.85; }
+    .bar{
+      height: 10px; border-radius:999px; background: rgba(255,255,255,.1);
+      overflow:hidden; border:1px solid var(--line);
+      margin-top: 8px;
+    }
+    .bar > div{ height:100%; background: rgba(56,217,150,.55); width: 62%; }
+
+    /* Right rail */
+    .rail{
+      padding: 14px;
+      position: sticky;
+      top: 14px;
+      height: calc(100vh - 28px);
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .rail .miniTitle{
+      display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;
+    }
+    .status{
+      font-size:12px; padding:4px 8px; border-radius:999px; border:1px solid var(--line);
+      background: rgba(0,0,0,.2); color: var(--muted);
+    }
+    .status.ok{ border-color: rgba(56,217,150,.25); background: rgba(56,217,150,.10); color:#bff6de; }
+    .status.warn{ border-color: rgba(255,204,102,.25); background: rgba(255,204,102,.10); color:#ffe9b8; }
+
+    /* Views */
+    [data-view]{ display:none; }
+    [data-view].active{ display:block; }
+
+    /* Mobile */
+    .bottomNav{
+      display:none;
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      padding: 10px 12px;
+      background: rgba(10,16,30,.82);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--line);
+      z-index: 50;
+    }
+    .bottomNav .row{
+      display:grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    .bottomNav button{
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.22);
+      border-radius: 14px;
+      padding: 10px 8px;
+      cursor:pointer;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .bottomNav button.active{
+      background: rgba(124,92,255,.20);
+      border-color: rgba(124,92,255,.26);
+      color: var(--text);
+    }
+
+    /* Drawer for rail on mobile */
+    .drawerOverlay{
+      display:none;
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.55);
+      z-index: 60;
+    }
+    .drawer{
+      position:fixed;
+      left:0; right:0; bottom:0;
+      background: rgba(15,27,51,.96);
+      border-top: 1px solid var(--line);
+      border-radius: 18px 18px 0 0;
+      max-height: 70vh;
+      transform: translateY(110%);
+      transition: transform .22s ease;
+      z-index: 61;
+      padding: 12px;
+      overflow:auto;
+    }
+    .drawer.open{ transform: translateY(0); }
+    .drawerHandle{
+      width: 52px; height: 6px; border-radius:999px;
+      background: rgba(255,255,255,.16);
+      margin: 6px auto 12px;
+    }
+
+    /* Responsive breakpoints */
+    @media (max-width: 1100px){
+      .app{ grid-template-columns: 260px 1fr 320px; }
+      .kpiRow{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 900px){
+      .app{ grid-template-columns: 1fr; padding-bottom: 82px; }
+      .sidebar{ display:none; }
+      .rail{ display:none; }
+      .bottomNav{ display:block; }
+      .grid{ grid-template-columns: repeat(6, 1fr); }
+      .span-8, .span-7, .span-6, .span-5, .span-4 { grid-column: span 6; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar (desktop) -->
+    <aside class="sidebar card">
+      <div class="brand">
+        <div>
+          <strong>MEME INTEL</strong>
+          <div class="sub">Researcher + Quant</div>
+        </div>
+        <span class="badge">Prototype</span>
+      </div>
+
+      <nav class="nav" id="sideNav">
+        <button class="active" data-target="overview"><span class="dot"></span>Overview</button>
+        <button data-target="research"><span class="dot"></span>Research</button>
+        <button data-target="signals"><span class="dot"></span>Signals</button>
+        <button data-target="lab"><span class="dot"></span>Strategy Lab</button>
+        <button data-target="execution"><span class="dot"></span>Execution</button>
+        <button data-target="portfolio"><span class="dot"></span>Portfolio</button>
+        <button data-target="alerts"><span class="dot"></span>Alerts</button>
+        <button data-target="settings"><span class="dot"></span>Settings</button>
+      </nav>
+
+      <div class="sideFooter">
+        <div class="kv"><span>Mode</span><strong>Paper</strong></div>
+        <div class="kv"><span>Research runs</span><strong>3 today</strong></div>
+        <div class="kv"><span>Connectors</span><strong>1 ok · 1 warn</strong></div>
+        <button class="pill primary" id="runResearchBtn">▶ Run Research</button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <header class="topbar card">
+        <div class="search" title="Search tokens, narratives, sources, wallets, traders…">
+          <span style="opacity:.8">⌕</span>
+          <input placeholder="Search: $TICKER, narrative, influencer, source, wallet…" />
+          <span class="chip">⌘K</span>
+        </div>
+        <button class="pill" id="intelBtn">Intel ▴</button>
+        <button class="pill primary">New alert</button>
+      </header>
+
+      <!-- OVERVIEW -->
+      <section class="grid active" data-view="overview">
+        <div class="card panel span-12">
+          <div class="hrow">
+            <div>
+              <h2>Daily Brief</h2>
+              <div class="sub">What changed since last scan + what might matter for decision-making</div>
+            </div>
+            <div class="chips">
+              <span class="chip">Freshness: 12m</span>
+              <span class="chip">Sources: 143</span>
+              <span class="chip">Models: 2</span>
+            </div>
+          </div>
+          <div class="kpiRow">
+            <div class="kpi">
+              <div class="label">Narratives trending</div>
+              <div class="value">7</div>
+              <div class="delta"><span class="up">▲</span> +2 vs yesterday</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Signal confidence</div>
+              <div class="value">0.68</div>
+              <div class="bar"><div style="width:68%"></div></div>
+            </div>
+            <div class="kpi">
+              <div class="label">Risk-on index</div>
+              <div class="value">54</div>
+              <div class="delta"><span class="up">▲</span> improving</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Execution status</div>
+              <div class="value">OK</div>
+              <div class="delta">paper trading enabled</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card panel span-7">
+          <div class="hrow">
+            <div>
+              <h2>Hot Narratives</h2>
+              <div class="sub">Clusters from social + news + on-chain chatter</div>
+            </div>
+            <button class="pill">View graph</button>
+          </div>
+
+          <div class="list">
+            <div class="item">
+              <div class="spark">
+                <svg viewBox="0 0 110 34" preserveAspectRatio="none">
+                  <path d="M0,28 C14,20 22,24 30,18 C38,12 50,22 62,12 C76,0 88,10 110,6" fill="none" stroke="rgba(124,92,255,.9)" stroke-width="2.4"/>
+                </svg>
+              </div>
+              <div class="grow">
+                <div class="title">“AI Agents trading memes”</div>
+                <div class="meta">Mentions ↑ · 2 exchanges listing rumors · influencer crossover</div>
+              </div>
+              <div class="right">Conf 0.74<br/>Fresh 9m</div>
+            </div>
+
+            <div class="item">
+              <div class="spark">
+                <svg viewBox="0 0 110 34" preserveAspectRatio="none">
+                  <path d="M0,22 C18,26 30,10 44,18 C56,26 70,12 82,16 C95,20 100,14 110,12" fill="none" stroke="rgba(56,217,150,.9)" stroke-width="2.4"/>
+                </svg>
+              </div>
+              <div class="grow">
+                <div class="title">“Celebrity coin season (rev 2)”</div>
+                <div class="meta">Wallet clustering suggests coordinated launches</div>
+              </div>
+              <div class="right">Conf 0.62<br/>Fresh 21m</div>
+            </div>
+
+            <div class="item">
+              <div class="spark">
+                <svg viewBox="0 0 110 34" preserveAspectRatio="none">
+                  <path d="M0,18 C10,8 30,10 44,14 C58,18 76,30 90,24 C98,20 104,22 110,20" fill="none" stroke="rgba(255,204,102,.95)" stroke-width="2.4"/>
+                </svg>
+              </div>
+              <div class="grow">
+                <div class="title">“Exchange airdrop meta”</div>
+                <div class="meta">Threads suggest eligibility patterns (bridges + volume)</div>
+              </div>
+              <div class="right">Conf 0.57<br/>Fresh 41m</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card panel span-5">
+          <div class="hrow">
+            <div>
+              <h2>Top Signals</h2>
+              <div class="sub">Ranked ideas with catalysts + invalidation</div>
+            </div>
+            <button class="pill">Tune filters</button>
+          </div>
+
+          <div class="list">
+            <div class="item">
+              <div class="grow">
+                <div class="title">$MEMECOIN — Momentum + narrative tailwind</div>
+                <div class="meta">Catalyst: listing rumor · Invalidation: break below VWAP</div>
+              </div>
+              <div class="right"><span class="status ok">0.71</span><br/>R:R 2.1</div>
+            </div>
+            <div class="item">
+              <div class="grow">
+                <div class="title">$DOGE2 — Mean reversion setup</div>
+                <div class="meta">Catalyst: volume spike · Invalidation: trend flip</div>
+              </div>
+              <div class="right"><span class="status warn">0.58</span><br/>R:R 1.6</div>
+            </div>
+            <div class="item">
+              <div class="grow">
+                <div class="title">$CAT — Breakout watch</div>
+                <div class="meta">Catalyst: influencer post · Invalidation: failed retest</div>
+              </div>
+              <div class="right"><span class="status">0.52</span><br/>R:R 1.3</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RESEARCH -->
+      <section class="grid" data-view="research">
+        <div class="card panel span-8">
+          <div class="hrow">
+            <div>
+              <h2>Scanner Runs</h2>
+              <div class="sub">Create repeatable “intel jobs” (sources → extraction → clustering → brief)</div>
+            </div>
+            <div class="chips">
+              <span class="chip">Twitter/X</span>
+              <span class="chip">Telegram</span>
+              <span class="chip">Reddit</span>
+              <span class="chip">On-chain</span>
+            </div>
+          </div>
+
+          <div class="list">
+            <div class="item">
+              <div class="grow">
+                <div class="title">Fresh Memes (hourly)</div>
+                <div class="meta">Queries: new tickers + launch keywords · Extract: contract + chain + liquidity · Output: watchlist candidates</div>
+              </div>
+              <div class="right">Last: 12m<br/><span class="status ok">running</span></div>
+            </div>
+            <div class="item">
+              <div class="grow">
+                <div class="title">Narrative Shift Detector (daily)</div>
+                <div class="meta">Compare clusters day-over-day · Highlight new influencers · “what changed” summary</div>
+              </div>
+              <div class="right">Last: 3h<br/><span class="status">idle</span></div>
+            </div>
+            <div class="item">
+              <div class="grow">
+                <div class="title">Whale Watch (15m)</div>
+                <div class="meta">Track labeled wallets · detect coordinated buys · join with social mentions</div>
+              </div>
+              <div class="right">Last: 28m<br/><span class="status warn">degraded</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card panel span-4">
+          <div class="hrow">
+            <div>
+              <h2>Source Feed</h2>
+              <div class="sub">Deduped + ranked by novelty</div>
+            </div>
+            <button class="pill">Export</button>
+          </div>
+
+          <div class="list">
+            <div class="item">
+              <div class="grow">
+                <div class="title">Influencer thread: “next meta is …”</div>
+                <div class="meta">Relevance 0.81 · Novelty high · Entities: $MEMECOIN</div>
+              </div>
+              <div class="right">6m</div>
+            </div>
+            <div class="item">
+              <div class="grow">
+                <div class="title">Telegram: launch rumor + contract posted</div>
+                <div class="meta">Extracted: 0x…abcd · Chain: SOL</div>
+              </div>
+              <div class="right">14m</div>
+            </div>
+            <div class="item">
+              <div class="grow">
+                <div class="title">Reddit: “why this one is different”</div>
+                <div class="meta">Sentiment: mixed · Engagement high</div>
+              </div>
+              <div class="right">39m</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SIGNALS -->
+      <section class="grid" data-view="signals">
+        <div class="card panel span-12">
+          <div class="hrow">
+            <div>
+              <h2>Signals Board</h2>
+              <div class="sub">Every idea has: thesis · catalyst · risk · invalidation · sizing hint · links to evidence</div>
+            </div>
+            <div class="chips">
+              <span class="chip">Filter: ≥0.6</span>
+              <span class="chip">Horizon: 1–24h</span>
+              <span class="chip">Chain: SOL + ETH</span>
+            </div>
+          </div>
+
+          <div class="list">
+            <div class="item">
+              <div class="grow">
+                <div class="title">$MEMECOIN — Narrative + volume alignment</div>
+                <div class="meta">Evidence: 12 sources · Wallet: 3 labeled accumulators · Risk: thin liquidity · Invalidation: break below level X</div>
+              </div>
+              <div class="right"><span class="status ok">0.71</span><br/>Size: S</div>
+            </div>
+            <div class="item">
+              <div class="grow">
+                <div class="title">$DOGE2 — Mean reversion after exhaustion</div>
+                <div class="meta">Evidence: 7 sources · Pattern: overshoot + fade · Risk: regime shift · Invalidation: HH/HL resumes</div>
+              </div>
+              <div class="right"><span class="status warn">0.58</span><br/>Size: XS</div>
+            </div>
+            <div class="item">
+              <div class="grow">
+                <div class="title">$CAT — Breakout watch + catalyst window</div>
+                <div class="meta">Evidence: 4 sources · Risk: hype-only · Invalidation: failed retest</div>
+              </div>
+              <div class="right"><span class="status">0.52</span><br/>Size: Watch</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STRATEGY LAB -->
+      <section class="grid" data-view="lab">
+        <div class="card panel span-6">
+          <div class="hrow">
+            <div>
+              <h2>Strategy Library</h2>
+              <div class="sub">Template → params → backtest → deploy</div>
+            </div>
+            <button class="pill primary">+ New strategy</button>
+          </div>
+
+          <div class="list">
+            <div class="item">
+              <div class="grow">
+                <div class="title">Momentum (narrative-confirmed)</div>
+                <div class="meta">Inputs: price/vol + narrative score · Exit: trailing + invalidation level</div>
+              </div>
+              <div class="right"><span class="status ok">paper</span><br/>Sharpe 1.3</div>
+            </div>
+            <div class="item">
+              <div class="grow">
+                <div class="title">Mean Reversion (liquidity-aware)</div>
+                <div class="meta">Inputs: exhaustion + spread · Guardrails: slippage + min-liq</div>
+              </div>
+              <div class="right"><span class="status">idle</span><br/>Sharpe 0.8</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card panel span-6">
+          <div class="hrow">
+            <div>
+              <h2>Backtest Snapshot</h2>
+              <div class="sub">Pick a strategy to see full report + parameters</div>
+            </div>
+            <button class="pill">Open report</button>
+          </div>
+
+          <div class="kpiRow" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="kpi">
+              <div class="label">Win rate</div>
+              <div class="value">46%</div>
+              <div class="delta">sample 312 trades</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Max drawdown</div>
+              <div class="value">-9.4%</div>
+              <div class="delta"><span class="down">▼</span> needs guardrail</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Avg slippage</div>
+              <div class="value">0.18%</div>
+              <div class="delta">paper est.</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Capacity</div>
+              <div class="value">$12k</div>
+              <div class="delta">liq-limited</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- EXECUTION -->
+      <section class="grid" data-view="execution">
+        <div class="card panel span-8">
+          <div class="hrow">
+            <div>
+              <h2>Execution Console</h2>
+              <div class="sub">Connectors → order policy → order blotter</div>
+            </div>
+            <div class="chips">
+              <span class="chip">Policy: max slippage 0.5%</span>
+              <span class="chip">Kill-switch: on</span>
+            </div>
+          </div>
+
+          <div class="list">
+            <div class="item">
+              <div class="grow">
+                <div class="title">Connector: gmgn.ai</div>
+                <div class="meta">API key present · Rate limits OK · Last order: none</div>
+              </div>
+              <div class="right"><span class="status ok">connected</span></div>
+            </div>
+            <div class="item">
+              <div class="grow">
+                <div class="title">Connector: anyex.ai</div>
+                <div class="meta">API key missing · Enable after key added</div>
+              </div>
+              <div class="right"><span class="status warn">needs key</span></div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px; padding:12px; border-radius:14px; border:1px solid var(--line); background: rgba(0,0,0,.18);">
+            <div style="display:flex; justify-content:space-between; gap:12px; align-items:center;">
+              <div>
+                <div style="font-weight:700">Quick Order (mock)</div>
+                <div class="sub">In a real build: token picker, route preview, fee/slippage estimate, simulation</div>
+              </div>
+              <button class="pill primary">Simulate</button>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-top:12px;">
+              <div class="search"><input value="$MEMECOIN" aria-label="Token"/></div>
+              <div class="search"><input value="Buy" aria-label="Side"/></div>
+              <div class="search"><input value="$250" aria-label="Notional"/></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card panel span-4">
+          <div class="hrow">
+            <div>
+              <h2>Order Blotter</h2>
+              <div class="sub">Recent actions</div>
+            </div>
+            <button class="pill">CSV</button>
+          </div>
+
+          <div class="list">
+            <div class="item">
+              <div class="grow">
+                <div class="title">SIM • Buy $MEMECOIN</div>
+                <div class="meta">Route: gmgn · Est slippage 0.22% · Fee 0.05%</div>
+              </div>
+              <div class="right">2m</div>
+            </div>
+            <div class="item">
+              <div class="grow">
+                <div class="title">RULE • Kill-switch armed</div>
+                <div class="meta">Trigger: -3% daily drawdown</div>
+              </div>
+              <div class="right">1h</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PORTFOLIO -->
+      <section class="grid" data-view="portfolio">
+        <div class="card panel span-12">
+          <div class="hrow">
+            <div>
+              <h2>Portfolio</h2>
+              <div class="sub">Positions + exposure + risk + journaling hooks</div>
+            </div>
+            <button class="pill primary">Add note</button>
+          </div>
+          <div class="list">
+            <div class="item">
+              <div class="grow">
+                <div class="title">$MEMECOIN</div>
+                <div class="meta">Thesis: narrative momentum · Stop: invalidation level · Evidence links saved</div>
+              </div>
+              <div class="right">+2.1%<br/><span class="status ok">S</span></div>
+            </div>
+            <div class="item">
+              <div class="grow">
+                <div class="title">$DOGE2</div>
+                <div class="meta">Thesis: mean reversion · Stop: trend flip · Risk: regime shift</div>
+              </div>
+              <div class="right">-0.6%<br/><span class="status warn">XS</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ALERTS -->
+      <section class="grid" data-view="alerts">
+        <div class="card panel span-6">
+          <div class="hrow">
+            <div>
+              <h2>Alert Rules</h2>
+              <div class="sub">When to ping you (push/email/webhook)</div>
+            </div>
+            <button class="pill primary">+ New rule</button>
+          </div>
+          <div class="list">
+            <div class="item">
+              <div class="grow">
+                <div class="title">Narrative flips into top 3</div>
+                <div class="meta">Condition: cluster rank ↑ · Confidence ≥ 0.65</div>
+              </div>
+              <div class="right"><span class="status ok">on</span></div>
+            </div>
+            <div class="item">
+              <div class="grow">
+                <div class="title">Wallet accumulator triggers</div>
+                <div class="meta">Condition: ≥ 3 labeled wallets buy within 30m</div>
+              </div>
+              <div class="right"><span class="status ok">on</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card panel span-6">
+          <div class="hrow">
+            <div>
+              <h2>Triggered</h2>
+              <div class="sub">Recent alerts + linked evidence</div>
+            </div>
+            <button class="pill">Digest</button>
+          </div>
+          <div class="list">
+            <div class="item">
+              <div class="grow">
+                <div class="title">“AI Agents trading memes” entered top 3</div>
+                <div class="meta">Evidence: 9 sources · 2 influencers · 1 exchange rumor</div>
+              </div>
+              <div class="right">18m</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="grid" data-view="settings">
+        <div class="card panel span-12">
+          <div class="hrow">
+            <div>
+              <h2>Settings</h2>
+              <div class="sub">API keys, sources, models, and safety rails</div>
+            </div>
+            <button class="pill">Lock screen</button>
+          </div>
+
+          <div class="grid" style="grid-template-columns: repeat(12, 1fr); gap:14px;">
+            <div class="card panel span-6" style="background: rgba(0,0,0,.18); border:1px solid var(--line); box-shadow:none;">
+              <h2 style="margin-bottom:6px;">Connectors</h2>
+              <div class="sub">Store keys securely; show status only</div>
+              <div class="list" style="margin-top:10px;">
+                <div class="item">
+                  <div class="grow">
+                    <div class="title">gmgn.ai</div>
+                    <div class="meta">Key: ●●●●●●● (masked) · Permissions: trade (paper)</div>
+                  </div>
+                  <div class="right"><span class="status ok">ok</span></div>
+                </div>
+                <div class="item">
+                  <div class="grow">
+                    <div class="title">anyex.ai</div>
+                    <div class="meta">Key missing · Add to enable execution</div>
+                  </div>
+                  <div class="right"><span class="status warn">setup</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card panel span-6" style="background: rgba(0,0,0,.18); border:1px solid var(--line); box-shadow:none;">
+              <h2 style="margin-bottom:6px;">Safety Rails</h2>
+              <div class="sub">Defaults you’ll be happy you set early</div>
+              <div class="list" style="margin-top:10px;">
+                <div class="item">
+                  <div class="grow">
+                    <div class="title">Kill-switch</div>
+                    <div class="meta">Disable trading at -3% daily drawdown or connector errors</div>
+                  </div>
+                  <div class="right"><span class="status ok">on</span></div>
+                </div>
+                <div class="item">
+                  <div class="grow">
+                    <div class="title">Slippage cap</div>
+                    <div class="meta">Reject orders above 0.5% estimated slippage</div>
+                  </div>
+                  <div class="right"><span class="status ok">0.5%</span></div>
+                </div>
+                <div class="item">
+                  <div class="grow">
+                    <div class="title">Liquidity minimum</div>
+                    <div class="meta">Skip assets below configurable liquidity thresholds</div>
+                  </div>
+                  <div class="right"><span class="status">on</span></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="sub" style="margin-top:12px;">
+            Note: This is only a UI mock. If you automate trading, build in paper mode, audit logs, and strict risk controls.
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Right rail (desktop) -->
+    <aside class="rail card" id="railDesktop">
+      <div class="card panel" style="background: rgba(0,0,0,.18); box-shadow:none;">
+        <div class="miniTitle">
+          <h2 style="font-size:15px;margin:0;">Intel Rail</h2>
+          <span class="status ok">live</span>
+        </div>
+        <div class="sub">Quick context while you work</div>
+      </div>
+
+      <div class="card panel" style="background: rgba(0,0,0,.18); box-shadow:none;">
+        <div class="miniTitle">
+          <h2 style="font-size:15px;margin:0;">Watchlist</h2>
+          <span class="status">6</span>
+        </div>
+        <div class="list">
+          <div class="item">
+            <div class="grow">
+              <div class="title">$MEMECOIN</div>
+              <div class="meta">Narrative: AI agents · Conf 0.71</div>
+            </div>
+            <div class="right">+3.2%</div>
+          </div>
+          <div class="item">
+            <div class="grow">
+              <div class="title">$DOGE2</div>
+              <div class="meta">Narrative: celeb · Conf 0.58</div>
+            </div>
+            <div class="right">-0.4%</div>
+          </div>
+          <div class="item">
+            <div class="grow">
+              <div class="title">$CAT</div>
+              <div class="meta">Narrative: breakout · Conf 0.52</div>
+            </div>
+            <div class="right">+0.8%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card panel" style="background: rgba(0,0,0,.18); box-shadow:none;">
+        <div class="miniTitle">
+          <h2 style="font-size:15px;margin:0;">Connectors</h2>
+          <span class="status warn">1 warn</span>
+        </div>
+        <div class="list">
+          <div class="item">
+            <div class="grow">
+              <div class="title">gmgn.ai</div>
+              <div class="meta">Connected (paper)</div>
+            </div>
+            <div class="right"><span class="status ok">ok</span></div>
+          </div>
+          <div class="item">
+            <div class="grow">
+              <div class="title">anyex.ai</div>
+              <div class="meta">Key missing</div>
+            </div>
+            <div class="right"><span class="status warn">setup</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card panel" style="background: rgba(0,0,0,.18); box-shadow:none;">
+        <div class="miniTitle">
+          <h2 style="font-size:15px;margin:0;">Active Alerts</h2>
+          <span class="status">2</span>
+        </div>
+        <div class="list">
+          <div class="item">
+            <div class="grow">
+              <div class="title">Narrative entered top 3</div>
+              <div class="meta">“AI agents trading memes”</div>
+            </div>
+            <div class="right">18m</div>
+          </div>
+          <div class="item">
+            <div class="grow">
+              <div class="title">Whale accumulator</div>
+              <div class="meta">$MEMECOIN buy cluster</div>
+            </div>
+            <div class="right">46m</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Mobile bottom nav -->
+  <div class="bottomNav">
+    <div class="row" id="bottomNav">
+      <button class="active" data-target="overview">Overview</button>
+      <button data-target="research">Research</button>
+      <button data-target="signals">Signals</button>
+      <button data-target="lab">Lab</button>
+      <button data-target="execution">Exec</button>
+    </div>
+  </div>
+
+  <!-- Mobile Intel Drawer -->
+  <div class="drawerOverlay" id="drawerOverlay"></div>
+  <div class="drawer" id="drawer">
+    <div class="drawerHandle"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+      <h2 style="margin:0;">Intel</h2>
+      <button class="pill" id="closeDrawer">Close</button>
+    </div>
+    <div class="sub" style="margin-top:6px;">Watchlist, connectors, alerts (same as desktop rail)</div>
+    <div style="margin-top:12px;">
+      <!-- Clone railDesktop content for mobile -->
+      <div id="railClone"></div>
+    </div>
+  </div>
+
+  <script>
+    const views = document.querySelectorAll('[data-view]');
+    const sideNav = document.getElementById('sideNav');
+    const bottomNav = document.getElementById('bottomNav');
+
+    function setActiveView(name){
+      views.forEach(v => v.classList.toggle('active', v.dataset.view === name));
+      [...sideNav.querySelectorAll('button')].forEach(b => b.classList.toggle('active', b.dataset.target === name));
+      [...bottomNav.querySelectorAll('button')].forEach(b => b.classList.toggle('active', b.dataset.target === name));
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+
+    function wireNav(container){
+      container.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-target]');
+        if(!btn) return;
+        setActiveView(btn.dataset.target);
+      });
+    }
+    wireNav(sideNav);
+    wireNav(bottomNav);
+
+    // Intel drawer (mobile)
+    const intelBtn = document.getElementById('intelBtn');
+    const drawer = document.getElementById('drawer');
+    const overlay = document.getElementById('drawerOverlay');
+    const closeDrawer = document.getElementById('closeDrawer');
+
+    // Clone desktop rail content into drawer
+    const railDesktop = document.getElementById('railDesktop');
+    const railClone = document.getElementById('railClone');
+    railClone.innerHTML = railDesktop.innerHTML;
+
+    function openDrawer(){
+      overlay.style.display = 'block';
+      drawer.classList.add('open');
+    }
+    function hideDrawer(){
+      overlay.style.display = 'none';
+      drawer.classList.remove('open');
+    }
+    intelBtn.addEventListener('click', openDrawer);
+    overlay.addEventListener('click', hideDrawer);
+    closeDrawer.addEventListener('click', hideDrawer);
+
+    // “Run Research” mock
+    document.getElementById('runResearchBtn').addEventListener('click', () => {
+      alert("Prototype: here you’d start a scanner run (jobs, sources, prompts, schedulers).");
+      setActiveView('research');
+    });
+
+    // Cmd-K hint (no real command palette here)
+    document.querySelector('.search').addEventListener('dblclick', () => {
+      alert("Prototype: open a command palette (Run scan / Add to watchlist / Create alert / Deploy strategy).");
+    });
+  </script>
+</body>
+</html>

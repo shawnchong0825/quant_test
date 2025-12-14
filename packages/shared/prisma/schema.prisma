@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Token {
+  id              String   @id @default(uuid())
+  address         String   @unique // Contract Address
+  chain           String   // 'solana' or 'bnb'
+  symbol          String
+  name            String
+  decimals        Int
+  
+  // Market Data (Updated frequently)
+  price           Float?
+  liquidity       Float?
+  volume24h       Float?
+  marketCap       Float?
+  
+  // Security Checks
+  isHoneypot      Boolean  @default(false)
+  isRenounced     Boolean  @default(false)
+  hasLockedLP     Boolean  @default(false)
+  
+  // Rat/Bundler Analysis
+  bundlerScore    Float    @default(0) // 0-100, High = Bad
+  ratTradingScore Float    @default(0) // 0-100, High = Bad
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  sentiment       Sentiment[]
+  signals         Signal[]
+}
+
+model Sentiment {
+  id              String   @id @default(uuid())
+  tokenId         String
+  token           Token    @relation(fields: [tokenId], references: [id])
+  
+  source          String   // 'twitter', 'telegram', 'reddit'
+  sourceId        String?  // Tweet ID or Message ID
+  
+  content         String?  // Raw text (if needed, or just store embedding/score)
+  sentimentScore  Float    // -1.0 to 1.0
+  hypeScore       Float    // 0 to 100 (Engagement based)
+  
+  authorTier      String   // 'kol', 'smart_money', 'random'
+  
+  createdAt       DateTime @default(now())
+}
+
+model Signal {
+  id              String   @id @default(uuid())
+  tokenId         String
+  token           Token    @relation(fields: [tokenId], references: [id])
+  
+  type            String   // 'narrative_spike', 'smart_money_buy', 'fud_dip'
+  direction       String   // 'BUY', 'SELL', 'NEUTRAL'
+  confidence      Float    // 0.0 to 1.0
+  
+  status          String   // 'NEW', 'PROCESSED', 'EXECUTED', 'IGNORED'
+  
+  payload         Json?    // Extra data for the signal (e.g. recommended entry)
+  
+  createdAt       DateTime @default(now())
+}
+
+model Narrative {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  score       Float    // 0-100 Impact/Hype score
+  tags        String[] // ["AI", "Memes"]
+  
+  // Stats
+  mentions    Int      @default(0)
+  
+  status      String   @default("active") // active, archived
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
